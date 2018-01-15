@@ -1,0 +1,19 @@
+group 'com.dimafeng'
+
+subprojects {
+    apply plugin: 'scala'
+    sourceCompatibility = 1.8
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        compile("org.scala-lang:scala-library:$scalaVersion",
+                "ch.qos.logback:logback-classic:$logbackVersion",
+                "com.typesafe.scala-logging:scala-logging_2.12:$scalaLoggingVersion",
+        )
+        testCompile("org.scalatest:scalatest_2.12:$scalatestVersion",
+                "org.mockito:mockito-all:$mockitoVersion",
+                "junit:junit:$junitVersion")
+    }
+}

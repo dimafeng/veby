@@ -1,0 +1,5 @@
+rootProject.name = 'veby'
+include 'veby-undertow'
+include 'core'
+include 'simple-routing'
+
