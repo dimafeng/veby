@@ -37,7 +37,7 @@ object Router {
     CompiledRoute(Pattern.compile(pattern), parameterNames, route)
   }
 
-  private case class CompiledRoute(pattern: Pattern, parameterNames: Seq[String], route: Route)
+  protected case class CompiledRoute(pattern: Pattern, parameterNames: Seq[String], route: Route)
 
 }
 
