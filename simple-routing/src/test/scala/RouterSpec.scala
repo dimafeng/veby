@@ -15,22 +15,23 @@ class RouterSpec extends FlatSpec with MockitoSugar {
         (req: Request) => Future.successful(MockResponse(Map("params" -> req.pathParameters, "route" -> 1)))
       ),
       Get("/test/",
-        _ => Future.successful(MockResponse(Map("route" -> 2)))
+        (req: Request) => Future.successful(MockResponse(Map("params" -> req.pathParameters, "route" -> 2)))
       )
     )
 
-    val response1 = Await.result(action(mockedRequest("/test/1234")), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
+    val response1 = Await.result(action(mockedRequest("/test/1234", Get.method)), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
     assert(response1.value("params") == Map("foo" -> 1234))
 
-    val response2 = Await.result(action(mockedRequest("/test/1234")), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
+    val response2 = Await.result(action(mockedRequest("/test/1234", Get.method)), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
     assert(response2.value("route") == 2)
   }
 }
 
 object RouterSpec extends MockitoSugar {
-  def mockedRequest(path: String) = {
+  def mockedRequest(path: String, method: String) = {
     val request = mock[Request]
     when(request.path).thenReturn(path)
+    when(request.method).thenReturn(method)
     request
   }
 }
