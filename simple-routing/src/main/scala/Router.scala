@@ -14,7 +14,7 @@ class Router(routes: Route*) extends Action {
 
   override def apply(req: Request): Future[Response] = {
     compiledRoutes.find(r =>
-      req.method.toUpperCase == r.route.method && (r.route.pattern == "*" || r.pattern.matcher(req.path).matches())
+      req.method.toUpperCase == r.route.method && (r.route.pattern == ".*" || r.pattern.matcher(req.path).matches())
     ).map { r =>
       val matcher = r.pattern.matcher(req.path)
       val parameters: Map[String, Iterable[String]] = if (matcher.find()) {
@@ -31,7 +31,7 @@ object Router {
   private val parameterRegex = "\\{([^}]*?)\\}".r
 
   def createCompiledRoute(route: Route): CompiledRoute = {
-    val pattern = parameterRegex.replaceAllIn(route.pattern, "(?<$1>\\\\[^/]+)")
+    val pattern = parameterRegex.replaceAllIn(route.pattern, "(?<$1>[^/]+)")
     val parameterNames = parameterRegex.findAllMatchIn(route.pattern).map(_.group(1)).toSeq
 
     CompiledRoute(Pattern.compile(pattern), parameterNames, route)
@@ -58,5 +58,9 @@ object Get {
 }
 
 case class Post(pattern: String, action: Action) extends Route {
+  override def method: String = "POST"
+}
+
+object Post {
   val method = "POST"
 }
