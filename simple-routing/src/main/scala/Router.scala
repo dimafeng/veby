@@ -64,3 +64,18 @@ case class Post(pattern: String, action: Action) extends Route {
 object Post {
   val method = "POST"
 }
+case class Delete(pattern: String, action: Action) extends Route {
+  override def method: String = "DELETE"
+}
+
+object Delete {
+  val method = "DELETE"
+}
+
+case class Put(pattern: String, action: Action) extends Route {
+  override def method: String = "PUT"
+}
+
+object Put {
+  val method = "PUT"
+}
