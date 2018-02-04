@@ -28,24 +28,24 @@ class RouterSpec extends FlatSpec with MockitoSugar {
       )
     )
 
-    val responseGetWithParams = Await.result(action(mockedRequest("/test/1234", Get.method)), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
+    val responseGetWithParams = Await.result(action(mockedRequest("/test/1234", "GET")), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
     assert(responseGetWithParams.value("params") == Map("foo" -> List("1234")))
     assert(responseGetWithParams.value("status") == 200)
 
-    val responseGetWithoutParams = Await.result(action(mockedRequest("/test/", Get.method)), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
+    val responseGetWithoutParams = Await.result(action(mockedRequest("/test/", "GET")), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
     assert(responseGetWithoutParams.value("params") == Map())
     assert(responseGetWithoutParams.value("status") == 200)
 
 
-    val responsePost = Await.result(action(mockedRequest("/test/", "{foo: 'foo'}", Post.method)), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
+    val responsePost = Await.result(action(mockedRequest("/test/", "{foo: 'foo'}", "POST")), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
     assert(responsePost.value("body") == "{foo: 'foo'}")
     assert(responsePost.value("status") == 200)
 
-    val responsePut = Await.result(action(mockedRequest("/test/", "{foo: 'foo'}", Put.method)), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
+    val responsePut = Await.result(action(mockedRequest("/test/", "{foo: 'foo'}", "PUT")), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
     assert(responsePut.value("body") == "{foo: 'foo'}")
     assert(responsePut.value("status") == 200)
 
-    val responseDelete = Await.result(action(mockedRequest("/test/", "{foo: 'foo'}", Delete.method)), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
+    val responseDelete = Await.result(action(mockedRequest("/test/", "{foo: 'foo'}", "DELETE")), 1 second).asInstanceOf[MockResponse[Map[String, _]]]
     assert(responseDelete.value("body") == "{success: 'true'}")
     assert(responseDelete.value("status") == 200)
 

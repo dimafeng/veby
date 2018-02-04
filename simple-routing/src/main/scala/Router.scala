@@ -50,32 +50,18 @@ sealed trait Route {
 }
 
 case class Get(pattern: String, action: Action) extends Route {
-  override def method: String = "GET"
-}
-
-object Get {
-  val method = "GET"
+  val method: String = "GET"
 }
 
 case class Post(pattern: String, action: Action) extends Route {
-  override def method: String = "POST"
+  val method: String = "POST"
 }
 
-object Post {
-  val method = "POST"
-}
 case class Delete(pattern: String, action: Action) extends Route {
-  override def method: String = "DELETE"
-}
-
-object Delete {
-  val method = "DELETE"
+  val method: String = "DELETE"
 }
 
 case class Put(pattern: String, action: Action) extends Route {
-  override def method: String = "PUT"
+  val method: String = "PUT"
 }
 
-object Put {
-  val method = "PUT"
-}
