@@ -14,7 +14,7 @@ class Router(routes: Route*) extends Action {
 
   override def apply(req: Request): Future[Response] = {
     compiledRoutes.find(r =>
-      req.method.toUpperCase == r.route.method && (r.route.pattern == ".*" || r.pattern.matcher(req.path).matches())
+      req.method.toUpperCase == r.route.method && (r.route.pattern == "*" || r.pattern.matcher(req.path).matches())
     ).map { r =>
       val matcher = r.pattern.matcher(req.path)
       val parameters: Map[String, Iterable[String]] = if (matcher.find()) {
