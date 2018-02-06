@@ -15,27 +15,17 @@ import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
 object Server {
-  def apply(action: Action, filters: Filter*): Unit = {
+  def apply(action: Action, settings: Settings, filters: Filter*): Unit = {
     Undertow.builder
-      .addHttpListener(8080, "0.0.0.0", new Handler(action))
-      //.addHttpListener(8080, "0.0.0.0", new Handler1)
+      .addHttpListener(settings.port, settings.host, new Handler(action))
       .build.start()
   }
-}
 
-//class Handler1 extends HttpHandler {
-//  override def handleRequest(exchange: HttpServerExchange) = {
-//
-//    exchange.dispatch { () =>
-//      new Thread(() => {
-//        exchange.getRequestHeaders.put(Headers.CONTENT_TYPE, "application/json")
-//        exchange.getResponseSender.send("tet")
-//        exchange.endExchange()
-//      }).start()
-//
-//    }
-//  }
-//}
+  case class Settings(port: Int = 8080, host: String = "0.0.0.0")
+
+  object DefaultSettings extends Settings
+
+}
 
 class Handler(action: Action) extends HttpHandler {
   override def handleRequest(exchange: HttpServerExchange) = {

@@ -136,28 +136,10 @@ object Response {
     override lazy val cookies: Map[String, Cookie] = response.cookies ++ moreCookies
   }
 
+  def Ok[T](content: T)(implicit bt: BodyTransformer): Response = Response.Strict(new SingleDataSource(bt.toBody(content)))
+
+  def NotFound(implicit bt: BodyTransformer): Response = Response.Strict(EmptyDataSource, 404)
 }
-
-object Ok {
-  def apply[T](content: T)(implicit bt: BodyTransformer): Response = Response.Strict(new SingleDataSource(bt.toBody(content)))
-}
-
-trait DataSource {
-  def onData(f: PartialFunction[DataFrame, Unit]): Unit
-}
-
-class SingleDataSource(data: Array[Byte]) extends DataSource {
-  override def onData(f: PartialFunction[DataFrame, Unit]): Unit = {
-    f(Data(data))
-    f(Tail)
-  }
-}
-
-trait DataFrame
-
-case class Data(data: Array[Byte]) extends DataFrame
-
-object Tail extends DataFrame
 
 case class Cookie(name: String,
                   value: String,

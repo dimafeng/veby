@@ -3,6 +3,7 @@ package com.dimafeng.veby
 import java.util.regex.Pattern
 
 import com.dimafeng.veby.Request.RequestWrapper
+import com.dimafeng.veby.Response._
 
 import scala.concurrent.Future
 
@@ -23,7 +24,7 @@ class Router(routes: Route*) extends Action {
         Map()
       }
       r.route.action(new RequestWrapper(req, parameters))
-    }.getOrElse(???) // TODO default 404
+    }.getOrElse(Future.successful(NotFound))
   }
 }
 
@@ -41,7 +42,7 @@ object Router {
 
 }
 
-sealed trait Route {
+trait Route {
   def method: String
 
   def pattern: String
@@ -49,19 +50,31 @@ sealed trait Route {
   def action: Action
 }
 
-case class Get(pattern: String, action: Action) extends Route {
+case class GET(pattern: String, action: Action) extends Route {
   val method: String = "GET"
 }
 
-case class Post(pattern: String, action: Action) extends Route {
+case class POST(pattern: String, action: Action) extends Route {
   val method: String = "POST"
 }
 
-case class Delete(pattern: String, action: Action) extends Route {
+case class DELETE(pattern: String, action: Action) extends Route {
   val method: String = "DELETE"
 }
 
-case class Put(pattern: String, action: Action) extends Route {
+case class PUT(pattern: String, action: Action) extends Route {
   val method: String = "PUT"
+}
+
+case class HEAD(pattern: String, action: Action) extends Route {
+  val method: String = "HEAD"
+}
+
+case class OPTIONS(pattern: String, action: Action) extends Route {
+  val method: String = "OPTIONS"
+}
+
+case class CONNECT(pattern: String, action: Action) extends Route {
+  val method: String = "CONNECT"
 }
 

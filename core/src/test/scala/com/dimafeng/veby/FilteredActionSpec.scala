@@ -1,12 +1,13 @@
 package com.dimafeng.veby
 
+import com.dimafeng.veby.Response._
 import org.scalatest.FlatSpec
 import org.scalatest.mockito.MockitoSugar
 
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 
 class FilteredActionSpec extends FlatSpec with MockitoSugar {
