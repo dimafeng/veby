@@ -17,3 +17,24 @@ subprojects {
                 "junit:junit:$junitVersion")
     }
 }
+
+configure([project(':veby-undertow'), project(':core'), project(':simple-routing')]) {
+    apply plugin: 'maven-publish'
+
+    task sourceJar(type: Jar) {
+        from sourceSets.main.allJava
+        classifier "sources"
+    }
+
+    publishing {
+        publications {
+            vebyPublication(MavenPublication) {
+                from components.java
+                artifact sourceJar
+                pom.withXml {
+                    asNode().appendNode('description', 'veby')
+                }
+            }
+        }
+    }
+}
