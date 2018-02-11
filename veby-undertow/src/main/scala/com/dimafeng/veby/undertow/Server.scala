@@ -4,18 +4,16 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.Date
 
-import com.dimafeng.veby._
+import com.dimafeng.veby.{Action, _}
 import io.undertow.Undertow
 import io.undertow.server.{HttpHandler, HttpServerExchange, handlers}
 import io.undertow.util.HttpString
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success}
+import scala.concurrent.Promise
 
 object Server {
-  def apply(action: Action, settings: Settings, filters: Filter*): Unit = {
+  def apply[F[_] : CallbackConstructor : Monad](settings: Settings, filters: Filter[F]*)(action: Action[F]): Unit = {
     Undertow.builder
       .addHttpListener(settings.port, settings.host, new Handler(action))
       .build.start()
@@ -27,32 +25,50 @@ object Server {
 
 }
 
-class Handler(action: Action) extends HttpHandler {
-  override def handleRequest(exchange: HttpServerExchange) = {
+object CallbackConstructor {
+
+  import scala.concurrent.Future
+
+  implicit val future: CallbackConstructor[Future] = new CallbackConstructor[Future] {
+    override def apply[T]: Callback[T, Future] = {
+      val promise = Promise[T]()
+
+      new Callback[T, Future] {
+        override def received(data: T): Unit = promise.success(data)
+
+        override def convert: Future[T] = promise.future
+      }
+    }
+  }
+}
+
+class Handler[F[_] : CallbackConstructor : Monad](action: Action[F]) extends HttpHandler {
+  override def handleRequest(exchange: HttpServerExchange): Unit = {
     exchange.dispatch { () =>
-      action(new UndertowRequest(exchange))
-        .onComplete {
-          case Success(response) =>
-            exchange.setStatusCode(response.code)
-            response.headers.foreach {
-              case (k, v) =>
-                exchange.getResponseHeaders.add(new HttpString(k), v)
-            }
+      val response = action(new UndertowRequest(exchange, implicitly[CallbackConstructor[F]]))
+      val monadTypeClass = implicitly[Monad[F]]
 
-            response.cookies.values.foreach(c => exchange.setResponseCookie(new CookieAdapter(c)))
+      monadTypeClass.flatMap(response) { response =>
 
-            response.data.onData {
-              case Data(data) =>
-                exchange.getIoThread.execute { () =>
-                  exchange.getResponseSender.send(ByteBuffer.wrap(data))
-                }
-              case Tail =>
-                exchange.getIoThread.execute { () => exchange.getResponseSender.close() }
-            }
-          case Failure(ex) =>
-            ex.printStackTrace()
-            ???
+        exchange.setStatusCode(response.code)
+        response.headers.foreach {
+          case (k, v) =>
+            exchange.getResponseHeaders.add(new HttpString(k), v)
         }
+
+        response.cookies.values.foreach(c => exchange.setResponseCookie(new CookieAdapter(c)))
+
+        response.data.onData {
+          case Data(data) =>
+            exchange.getIoThread.execute { () =>
+              exchange.getResponseSender.send(ByteBuffer.wrap(data))
+            }
+          case Tail =>
+            exchange.getIoThread.execute { () => exchange.getResponseSender.close() }
+        }
+
+        monadTypeClass.unit(())
+      }
     }
   }
 }
@@ -101,41 +117,51 @@ class CookieAdapter(cookie: Cookie) extends handlers.Cookie {
   override def setSecure(secure: Boolean): Nothing = ???
 }
 
-class UndertowRequest(exchange: HttpServerExchange) extends Request {
+trait Callback[T, F[_]] {
+  def received(data: T): Unit
+
+  def convert: F[T]
+}
+
+trait CallbackConstructor[F[_]] {
+  def apply[T]: Callback[T, F]
+}
+
+class UndertowRequest[F[_] : Monad](exchange: HttpServerExchange, callbackConstructor: CallbackConstructor[F]) extends Request[F] {
   override def method: String = exchange.getRequestMethod.toString
 
   override lazy val headers: Map[String, String] = exchange.getRequestHeaders.iterator().asScala
     .map(h => h.getHeaderName.toString -> h.iterator().asScala.mkString(", "))
     .toMap
 
-  override def readBody: Future[Array[Byte]] = {
-    val p = Promise[Array[Byte]]()
+  override def readBody: F[Either[Exception, Array[Byte]]] = {
+    val p = callbackConstructor[Either[Exception, Array[Byte]]]
     exchange.getRequestReceiver.receiveFullBytes(
       (_: HttpServerExchange, message: Array[Byte]) => {
-        p.success(message)
+        p.received(Right(message))
         ()
       },
       (_: HttpServerExchange, ex: IOException) => {
-        p.failure(ex)
+        p.received(Left(ex))
         ()
       }
     )
-    p.future
+    p.convert
   }
 
-  override def readBodyString: Future[String] = {
-    val p = Promise[String]()
+  override def readBodyString: F[Either[Exception, String]] = {
+    val p = callbackConstructor[Either[Exception, String]]
     exchange.getRequestReceiver.receiveFullString(
       (_: HttpServerExchange, message: String) => {
-        p.success(message)
+        p.received(Right(message))
         ()
       },
       (_: HttpServerExchange, ex: IOException) => {
-        p.failure(ex)
+        p.received(Left(ex))
         ()
       }
     )
-    p.future
+    p.convert
   }
 
   override def hostName: String = exchange.getHostName

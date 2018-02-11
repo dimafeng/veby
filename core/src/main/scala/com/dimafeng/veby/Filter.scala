@@ -1,16 +1,14 @@
 package com.dimafeng.veby
 
-import scala.concurrent.Future
-
-trait Filter {
-  def apply(filter: Action)(request: Request): Future[Response]
+trait Filter[F[_]] {
+  def apply(filter: Action[F])(request: Request[F]): F[Response]
 }
 
-class FilteredAction(action: Action, filters: Filter*) extends Action {
-  override def apply(request: Request): Future[Response] = {
+class FilteredAction[F[_]](action: Action[F], filters: Filter[F]*) extends Action[F] {
+  override def apply(request: Request[F]): F[Response] = {
     filters.headOption match {
       case None => action(request)
-      case Some(f) => f.apply (new FilteredAction (action, filters.tail: _*) ) (request)
+      case Some(f) => f.apply(new FilteredAction(action, filters.tail: _*))(request)
     }
   }
 }

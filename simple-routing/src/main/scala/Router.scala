@@ -5,15 +5,13 @@ import java.util.regex.Pattern
 import com.dimafeng.veby.Request.RequestWrapper
 import com.dimafeng.veby.Response._
 
-import scala.concurrent.Future
-
 /**
   * Naive implementation of routing
   */
-class Router(routes: Route*) extends Action {
+class Router[F[_] : Monad](routes: Route[F]*) extends Action[F] {
   private val compiledRoutes = routes.map(Router.createCompiledRoute)
 
-  override def apply(req: Request): Future[Response] = {
+  override def apply(req: Request[F]): F[Response] = {
     compiledRoutes.find(r =>
       req.method.toUpperCase == r.route.method && (r.route.pattern == "*" || r.pattern.matcher(req.path).matches())
     ).map { r =>
@@ -24,57 +22,57 @@ class Router(routes: Route*) extends Action {
         Map()
       }
       r.route.action(new RequestWrapper(req, parameters))
-    }.getOrElse(Future.successful(NotFound))
+    }.getOrElse(implicitly[Monad[F]].unit(NotFound))
   }
 }
 
 object Router {
   private val parameterRegex = "\\{([^}]*?)\\}".r
 
-  def createCompiledRoute(route: Route): CompiledRoute = {
+  def createCompiledRoute[F[_]](route: Route[F]): CompiledRoute[F] = {
     val pattern = parameterRegex.replaceAllIn(route.pattern, "(?<$1>[^/]+)")
     val parameterNames = parameterRegex.findAllMatchIn(route.pattern).map(_.group(1)).toSeq
 
-    CompiledRoute(Pattern.compile(pattern), parameterNames, route)
+    CompiledRoute[F](Pattern.compile(pattern), parameterNames, route)
   }
 
-  protected case class CompiledRoute(pattern: Pattern, parameterNames: Seq[String], route: Route)
+  protected case class CompiledRoute[F[_]](pattern: Pattern, parameterNames: Seq[String], route: Route[F])
 
 }
 
-trait Route {
+trait Route[F[_]] {
   def method: String
 
   def pattern: String
 
-  def action: Action
+  def action: Action[F]
 }
 
-case class GET(pattern: String, action: Action) extends Route {
+case class GET[F[_]](pattern: String, action: Action[F]) extends Route[F] {
   val method: String = "GET"
 }
 
-case class POST(pattern: String, action: Action) extends Route {
+case class POST[F[_]](pattern: String, action: Action[F]) extends Route[F] {
   val method: String = "POST"
 }
 
-case class DELETE(pattern: String, action: Action) extends Route {
+case class DELETE[F[_]](pattern: String, action: Action[F]) extends Route[F] {
   val method: String = "DELETE"
 }
 
-case class PUT(pattern: String, action: Action) extends Route {
+case class PUT[F[_]](pattern: String, action: Action[F]) extends Route[F] {
   val method: String = "PUT"
 }
 
-case class HEAD(pattern: String, action: Action) extends Route {
+case class HEAD[F[_]](pattern: String, action: Action[F]) extends Route[F] {
   val method: String = "HEAD"
 }
 
-case class OPTIONS(pattern: String, action: Action) extends Route {
+case class OPTIONS[F[_]](pattern: String, action: Action[F]) extends Route[F] {
   val method: String = "OPTIONS"
 }
 
-case class CONNECT(pattern: String, action: Action) extends Route {
+case class CONNECT[F[_]](pattern: String, action: Action[F]) extends Route[F] {
   val method: String = "CONNECT"
 }
 

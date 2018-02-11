@@ -4,23 +4,40 @@ import java.util.Date
 
 import com.dimafeng.veby.Response.ResponseWrapper
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-trait Request {
+// TODO rename
+trait Monad[F[_]] {
+  def flatMap[A, B](effect: F[A])(f: A => F[B]): F[B]
+
+  def unit[A](a: A): F[A]
+}
+
+object Monad {
+  implicit val future = new Monad[Future] {
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    override def flatMap[A, B](effect: Future[A])(f: A => Future[B]): Future[B] = effect.flatMap(f)
+
+    override def unit[A](a: A): Future[A] = Future.successful(a)
+  }
+}
+
+trait Request[F[_]] {
   def method: String
 
   def headers: Map[String, String]
 
-  def readBody: Future[Array[Byte]]
+  def readBody: F[Either[Exception, Array[Byte]]]
 
-  def readBodyString: Future[String]
+  def readBodyString: F[Either[Exception, String]]
 
-  def readBodyEntity[T: ClassTag](implicit transformer: BodyTransformer): Future[T] = {
+  def readBodyEntity[T: ClassTag](implicit monad: Monad[F], transformer: BodyTransformer): F[Either[Exception, T]] = {
     def ctag = implicitly[reflect.ClassTag[T]]
 
-    readBody.map(transformer.as[T](_, ctag.runtimeClass.asInstanceOf[Class[T]]))
+    monad.flatMap(readBody)(v => monad.unit(v.map(transformer.as[T](_, ctag.runtimeClass.asInstanceOf[Class[T]]))))
   }
 
   def hostName: String
@@ -47,14 +64,14 @@ trait Request {
 
 object Request {
 
-  class RequestWrapper(request: Request, morePathParameters: Map[String, Iterable[String]] = Map()) extends Request {
+  class RequestWrapper[F[_]](request: Request[F], morePathParameters: Map[String, Iterable[String]] = Map()) extends Request[F] {
     override def method: String = request.method
 
     override def headers: Map[String, String] = request.headers
 
-    override def readBody: Future[Array[Byte]] = request.readBody
+    override def readBody: F[Either[Exception, Array[Byte]]] = request.readBody
 
-    override def readBodyString: Future[String] = request.readBodyString
+    override def readBodyString: F[Either[Exception, String]] = request.readBodyString
 
     override def hostName: String = request.hostName
 

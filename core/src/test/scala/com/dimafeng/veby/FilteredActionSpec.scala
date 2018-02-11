@@ -10,14 +10,14 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 
-class FilteredActionSpec extends FlatSpec with MockitoSugar {
+class FilteredActionSpec extends BaseSpec {
   it should "apply filters and the order should be correct" in {
     val orderCapturer = ListBuffer[Int]()
 
-    val a: Action = (r) => Future.successful(Ok("test"))
+    val a: Action[Option] = (r) => Some(Ok("test"))
 
-    val f1 = new Filter {
-      override def apply(filter: Action)(request: Request): Future[Response] = {
+    val f1 = new Filter[Option] {
+      override def apply(filter: Action[Option])(request: Request[Option]): Option[Response] = {
         filter(request).map { r =>
           orderCapturer += 1
           r.withStatusCode(204)
@@ -25,8 +25,8 @@ class FilteredActionSpec extends FlatSpec with MockitoSugar {
       }
     }
 
-    val f2 = new Filter {
-      override def apply(filter: Action)(request: Request): Future[Response] = {
+    val f2 = new Filter[Option] {
+      override def apply(filter: Action[Option])(request: Request[Option]): Option[Response] = {
         filter(request).map { r =>
           orderCapturer += 2
           r.withHeaders("test" -> "test")
@@ -34,8 +34,7 @@ class FilteredActionSpec extends FlatSpec with MockitoSugar {
       }
     }
 
-    val future = new FilteredAction(a, f1, f2).apply(mock[Request])
-    val response = Await.result(future, 1 second)
+    val response = new FilteredAction[Option](a, f1, f2).apply(mock[Request[Option]]).get
 
     assert(response.code == 204)
     assert(response.headers == Map("test" -> "test"))
