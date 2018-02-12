@@ -9,18 +9,18 @@ class RouterSpec extends FlatSpec with MockitoSugar {
   it should "process routes correctly" in {
     val action = new Router[Option](
       GET("/test/{foo}",
-        (req: Request[Option]) => Some(MockResponse(Map("params" -> req.pathParameters)))
+        req => Some(MockResponse(Map("params" -> req.pathParameters)))
       ),
       GET("/test/",
-        (req: Request[Option]) => Some(MockResponse(Map("params" -> req.pathParameters)))
+        req => Some(MockResponse(Map("params" -> req.pathParameters)))
       ),
       POST("/test/",
-        (req: Request[Option]) => req.readBodyString.map(body => MockResponse(Map("body" -> body)))),
+        req => req.readBodyString.map(body => MockResponse(Map("body" -> body)))),
       PUT("/test/",
-        (req: Request[Option]) => req.readBodyString.map(body => MockResponse(Map("body" -> body)))
+        req => req.readBodyString.map(body => MockResponse(Map("body" -> body)))
       ),
       DELETE("/test/",
-        (req: Request[Option]) => req.readBodyString.map(body => MockResponse(Map("body" -> "{success: 'true'}")))
+        req => req.readBodyString.map(body => MockResponse(Map("body" -> "{success: 'true'}")))
       )
     )
 
