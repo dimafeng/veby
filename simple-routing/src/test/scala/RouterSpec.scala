@@ -1,9 +1,11 @@
 package com.dimafeng.veby
 
-import com.dimafeng.veby.RouterSpec.{mockedRequest, effect}
+import com.dimafeng.veby.RouterSpec.{effect, mockedRequest}
 import org.mockito.Mockito._
 import org.scalatest.FlatSpec
 import org.scalatest.mockito.MockitoSugar
+
+import scala.util.Success
 
 class RouterSpec extends FlatSpec with MockitoSugar {
   it should "process routes correctly" in {
@@ -65,7 +67,7 @@ object RouterSpec extends MockitoSugar {
     when(request.pathParameters).thenReturn(Map.empty[String, Iterable[String]])
     when(request.path).thenReturn(path)
     when(request.method).thenReturn(method)
-    when(request.readBodyString).thenReturn(Some(Right(body)))
+    when(request.readBodyString).thenReturn(Some(Success(body)))
     request
   }
 }

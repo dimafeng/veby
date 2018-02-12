@@ -11,6 +11,7 @@ import io.undertow.util.HttpString
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Promise
+import scala.util.{Failure, Success, Try}
 
 object Server {
   def apply[F[_] : CallbackConstructor : Monad](settings: Settings, filters: Filter[F]*)(action: Action[F]): Unit = {
@@ -134,30 +135,30 @@ class UndertowRequest[F[_] : Monad](exchange: HttpServerExchange, callbackConstr
     .map(h => h.getHeaderName.toString -> h.iterator().asScala.mkString(", "))
     .toMap
 
-  override def readBody: F[Either[Exception, Array[Byte]]] = {
-    val p = callbackConstructor[Either[Exception, Array[Byte]]]
+  override def readBody: F[Try[Array[Byte]]] = {
+    val p = callbackConstructor[Try[Array[Byte]]]
     exchange.getRequestReceiver.receiveFullBytes(
       (_: HttpServerExchange, message: Array[Byte]) => {
-        p.received(Right(message))
+        p.received(Success(message))
         ()
       },
       (_: HttpServerExchange, ex: IOException) => {
-        p.received(Left(ex))
+        p.received(Failure(ex))
         ()
       }
     )
     p.convert
   }
 
-  override def readBodyString: F[Either[Exception, String]] = {
-    val p = callbackConstructor[Either[Exception, String]]
+  override def readBodyString: F[Try[String]] = {
+    val p = callbackConstructor[Try[String]]
     exchange.getRequestReceiver.receiveFullString(
       (_: HttpServerExchange, message: String) => {
-        p.received(Right(message))
+        p.received(Success(message))
         ()
       },
       (_: HttpServerExchange, ex: IOException) => {
-        p.received(Left(ex))
+        p.received(Failure(ex))
         ()
       }
     )

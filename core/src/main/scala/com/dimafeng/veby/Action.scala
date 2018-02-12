@@ -6,6 +6,7 @@ import com.dimafeng.veby.Response.ResponseWrapper
 
 import scala.concurrent.Future
 import scala.reflect.ClassTag
+import scala.util.Try
 
 // TODO rename
 trait Monad[F[_]] {
@@ -30,11 +31,11 @@ trait Request[F[_]] {
 
   def headers: Map[String, String]
 
-  def readBody: F[Either[Exception, Array[Byte]]]
+  def readBody: F[Try[Array[Byte]]]
 
-  def readBodyString: F[Either[Exception, String]]
+  def readBodyString: F[Try[String]]
 
-  def readBodyEntity[T: ClassTag](implicit monad: Monad[F], transformer: BodyTransformer): F[Either[Exception, T]] = {
+  def readBodyEntity[T: ClassTag](implicit monad: Monad[F], transformer: BodyTransformer): F[Try[T]] = {
     def ctag = implicitly[reflect.ClassTag[T]]
 
     monad.flatMap(readBody)(v => monad.unit(v.map(transformer.as[T](_, ctag.runtimeClass.asInstanceOf[Class[T]]))))
@@ -69,9 +70,9 @@ object Request {
 
     override def headers: Map[String, String] = request.headers
 
-    override def readBody: F[Either[Exception, Array[Byte]]] = request.readBody
+    override def readBody: F[Try[Array[Byte]]] = request.readBody
 
-    override def readBodyString: F[Either[Exception, String]] = request.readBodyString
+    override def readBodyString: F[Try[String]] = request.readBodyString
 
     override def hostName: String = request.hostName
 
