@@ -19,8 +19,6 @@ subprojects {
                 "junit:junit:$junitVersion")
     }
 
-
-
     task sourceJar(type: Jar) {
         from sourceSets.main.allJava
         classifier "sources"
