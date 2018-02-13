@@ -2,6 +2,8 @@ group 'com.dimafeng'
 
 subprojects {
     apply plugin: 'scala'
+    apply plugin: 'maven-publish'
+
     sourceCompatibility = 1.8
     repositories {
         mavenCentral()
@@ -16,10 +18,8 @@ subprojects {
                 "org.mockito:mockito-all:$mockitoVersion",
                 "junit:junit:$junitVersion")
     }
-}
 
-configure([project(':veby-undertow'), project(':core'), project(':simple-routing')]) {
-    apply plugin: 'maven-publish'
+
 
     task sourceJar(type: Jar) {
         from sourceSets.main.allJava
