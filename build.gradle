@@ -2,6 +2,8 @@ group 'com.dimafeng'
 
 subprojects {
     apply plugin: 'scala'
+    apply plugin: 'maven-publish'
+
     sourceCompatibility = 1.8
     repositories {
         mavenCentral()
@@ -15,5 +17,22 @@ subprojects {
         testCompile("org.scalatest:scalatest_2.12:$scalatestVersion",
                 "org.mockito:mockito-all:$mockitoVersion",
                 "junit:junit:$junitVersion")
+    }
+
+    task sourceJar(type: Jar) {
+        from sourceSets.main.allJava
+        classifier "sources"
+    }
+
+    publishing {
+        publications {
+            vebyPublication(MavenPublication) {
+                from components.java
+                artifact sourceJar
+                pom.withXml {
+                    asNode().appendNode('description', 'veby')
+                }
+            }
+        }
     }
 }
